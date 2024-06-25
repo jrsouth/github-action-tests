@@ -1,0 +1,30 @@
+x-volumes:
+  - &project-volume ../apps:/project/apps
+  - &app-volume ../apps/app:/app
+  - &api-volume ../apps/api:/app
+
+services:
+
+  cli:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cli
+    tty: true
+    volumes:
+      - *project-volume
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    volumes:
+      - *app-volume
+    ports:
+      - 3100:3000
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    volumes:
+      - *api-volume

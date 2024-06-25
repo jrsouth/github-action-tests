@@ -1,0 +1,9 @@
+FROM node:22-alpine3.19
+
+RUN mkdir -p /project
+
+USER node
+WORKDIR /project
+
+# ENTRYPOINT ["tail"]
+# CMD ["-f","/dev/null"]
