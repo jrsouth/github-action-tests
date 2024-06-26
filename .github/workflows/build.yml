@@ -18,12 +18,8 @@ jobs:
       contents: 'read'
       id-token: 'write'
 
-    steps:
-    - name: Where am I?
-      run: pwd
-
-    - name: What have I got?
-      run: ls -lash
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Configure Google authentication
       id: 'auth'
@@ -38,10 +34,8 @@ jobs:
         version: '>= 363.0.0'
 
 
-
-    - name: Checkout
-      uses: actions/checkout@v4
-
+    - name: Test gcloud
+      run: gcloud secrets versions access latest --secret=production-a-release
 
     - name: Build images
       run: docker compose -f docker/docker-compose.yml build
