@@ -1,3 +1,9 @@
+x-variables:
+  - &google-project burnished-edge-427513-m7
+  - &google-wip projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
+
+
+
 name: build-all-containers
 run-name: ${{ github.actor }} is learning GitHub Actions
 on:
@@ -13,31 +19,48 @@ on:
 jobs:
   build-containers:
     # if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: 'read'
       id-token: 'write'
 
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
     - name: Where am I?
       run: pwd
 
     - name: What have I got?
       run: ls -lash
 
+    - name: Configure Google authentication
+      id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        project_id: *google-project
+        workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        version: '>= 363.0.0'
+
+
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+
     - name: Build images
-      run: docker compose -p art-reg -f docker/docker-compose.yml build
+      run: docker compose -f docker/docker-compose.yml build
+
+    # - name: Push images
+    #   run: docker compose -f docker/docker-compose.yml push
 
 
     # - id: 'auth'
     #   uses: 'google-github-actions/auth@v2'
     #   with:
     #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-    #     service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+    #     service_account: 'github-actions@burnished-edge-427513-m7.iam.gserviceaccount.com'
 
     # - name: 'Set up Cloud SDK'
     #   uses: 'google-github-actions/setup-gcloud@v2'
