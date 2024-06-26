@@ -1,9 +1,3 @@
-x-variables:
-  - &google-project burnished-edge-427513-m7
-  - &google-wip projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
-
-
-
 name: build-all-containers
 run-name: ${{ github.actor }} is learning GitHub Actions
 on:
@@ -35,7 +29,7 @@ jobs:
       id: 'auth'
       uses: 'google-github-actions/auth@v2'
       with:
-        project_id: *google-project
+        project_id: burnished-edge-427513-m7
         workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
 
     - name: 'Set up Cloud SDK'
