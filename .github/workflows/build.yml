@@ -25,6 +25,12 @@ jobs:
           echo '- Bullet with `code` :nerd-face:' >> "$GITHUB_STEP_SUMMARY"
 
 
+      - name: Collect new release tag
+        env:
+          NEW_RELEASE_TAG: ${{ steps.create-release.outputs.NEW_RELEASE_TAG }}
+        run: echo 'NEW_RELEASE_TAG is ' $NEW_RELEASE_TAG
+
+
   build-containers:
     # if: github.event.pull_request.merged == true
     needs: create-release
@@ -47,12 +53,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    env:
-      NEW_RELEASE_TAG: ${{ steps.create-release.outputs.NEW_RELEASE_TAG }}
     steps:
-
-      - name: Collect new release tag
-        run: echo 'NEW_RELEASE_TAG is ' $NEW_RELEASE_TAG
 
       - name: Configure Google authentication
         id: 'auth'
