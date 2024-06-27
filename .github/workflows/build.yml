@@ -14,6 +14,7 @@ jobs:
 
   # We need a release version for our container tags
   create-release:
+    id: create-release
     runs-on: ubuntu-24.04
     steps:
       - name: Populate new release tag
@@ -31,60 +32,60 @@ jobs:
         run: echo 'NEW_RELEASE_TAG is ' $NEW_RELEASE_TAG
 
 
-  build-containers:
-    # if: github.event.pull_request.merged == true
-    needs: create-release
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
+  # build-containers:
+  #   # if: github.event.pull_request.merged == true
+  #   needs: create-release
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: 'read'
+  #     id-token: 'write'
+  #   steps:
 
-      - name: Checkout
-        uses: actions/checkout@v4
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Build images
-        run: docker compose -f docker/docker-compose.yml build
-
-
-  push-to-gar:
-    needs: build-containers
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-
-      - name: Configure Google authentication
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          project_id: burnished-edge-427513-m7
-          workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 363.0.0'
-
-      - name: Test gcloud auth connection
-        run: gcloud config configurations list
+  #     - name: Build images
+  #       run: docker compose -f docker/docker-compose.yml build
 
 
-    # - name: Push images
-    #   run: docker compose -f docker/docker-compose.yml push
+  # push-to-gar:
+  #   needs: build-containers
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: 'read'
+  #     id-token: 'write'
+  #   steps:
+
+  #     - name: Configure Google authentication
+  #       id: 'auth'
+  #       uses: 'google-github-actions/auth@v2'
+  #       with:
+  #         project_id: burnished-edge-427513-m7
+  #         workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
+
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v2'
+  #       with:
+  #         version: '>= 363.0.0'
+
+  #     - name: Test gcloud auth connection
+  #       run: gcloud config configurations list
 
 
-    # - id: 'auth'
-    #   uses: 'google-github-actions/auth@v2'
-    #   with:
-    #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-    #     service_account: 'github-actions@burnished-edge-427513-m7.iam.gserviceaccount.com'
+  #   # - name: Push images
+  #   #   run: docker compose -f docker/docker-compose.yml push
 
-    # - name: 'Set up Cloud SDK'
-    #   uses: 'google-github-actions/setup-gcloud@v2'
-    #   with:
-    #     version: '>= 363.0.0'
 
-    # - name: 'Use gcloud CLI'
-    #   run: 'gcloud info'
+  #   # - id: 'auth'
+  #   #   uses: 'google-github-actions/auth@v2'
+  #   #   with:
+  #   #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+  #   #     service_account: 'github-actions@burnished-edge-427513-m7.iam.gserviceaccount.com'
+
+  #   # - name: 'Set up Cloud SDK'
+  #   #   uses: 'google-github-actions/setup-gcloud@v2'
+  #   #   with:
+  #   #     version: '>= 363.0.0'
+
+  #   # - name: 'Use gcloud CLI'
+  #   #   run: 'gcloud info'
