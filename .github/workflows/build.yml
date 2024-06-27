@@ -14,7 +14,6 @@ env:
 
 jobs:
 
-  # We need a release version for our container tags
   create-release:
     runs-on: ubuntu-24.04
     permissions:
@@ -22,6 +21,26 @@ jobs:
       contents: write
 
     steps:
+
+      # Configure and test our Google credentials
+      # See: [xxx todo: dig out the link]
+
+      - name: Configure Google authentication
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.GOOGLE_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: '>= 363.0.0'
+
+      - name: Test gcloud auth connection
+        run: gcloud config configurations list
+
+
+      # Now the work begins
 
       - name: Checkout the code
         uses: actions/checkout@v4
@@ -36,6 +55,14 @@ jobs:
           echo "NEW_RELEASE_VERSION=$NEW_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
           echo "Prepared new release $NEW_RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Build the docker images
+        run: docker compose -f docker/docker-compose.yml build
+
+
+
+      # We do the GitHub release only after a successful build/push, otherwise
+      # we'll have a GitHub release without any corresponding Google Artifact
+      # Repository images - which in a very practical way isn't a real release.
       - name: Create a GitHub release
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
@@ -46,7 +73,7 @@ jobs:
           gh release create "v$NEW_RELEASE_VERSION" \
             --generate-notes \
             --target $RELEASE_BRANCH \
-            --title "Release $NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
+            --title "Release v$NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
             $RELEASE_TYPE_FLAG
 
 
