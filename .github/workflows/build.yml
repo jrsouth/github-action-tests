@@ -18,28 +18,29 @@ jobs:
       contents: 'read'
       id-token: 'write'
 
-    - name: Checkout
-      uses: actions/checkout@v4
+    steps:
 
-    - name: Configure Google authentication
-      id: 'auth'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        project_id: burnished-edge-427513-m7
-        workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v2'
-      with:
-        version: '>= 363.0.0'
+      - name: Configure Google authentication
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: burnished-edge-427513-m7
+          workload_identity_provider: projects/941946528420/locations/global/workloadIdentityPools/github/providers/github-repo-provider
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+
+      - name: Test gcloud
+        run: gcloud config configurations list
 
 
-    - name: Test gcloud
-      run: gcloud config configurations list
-
-
-    - name: Build images
-      run: docker compose -f docker/docker-compose.yml build
+      - name: Build images
+        run: docker compose -f docker/docker-compose.yml build
 
     # - name: Push images
     #   run: docker compose -f docker/docker-compose.yml push
