@@ -17,6 +17,9 @@ jobs:
   # We need a release version for our container tags
   create-release:
     runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
 
     steps:
 
