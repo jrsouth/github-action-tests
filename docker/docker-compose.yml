@@ -17,6 +17,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.app
+    image: ${PROJECT_NAME:-artifact-registry-test}/app
     volumes:
       - *app-volume
     ports:
@@ -26,5 +27,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
+    image: ${PROJECT_NAME:-artifact-registry-test}/api
     volumes:
       - *api-volume
