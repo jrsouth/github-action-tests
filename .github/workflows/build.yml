@@ -23,10 +23,10 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Create the new release's version
+      - name: Create the new release's version number
         id: create-release-tag
         run: |
           CURRENT_RELEASE_VERSION=$(gh release list --json tagName --jq '.[].tagName' | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
@@ -45,7 +45,7 @@ jobs:
           [[ "$RELEASE_BRANCH" = "main" ]] || RELEASE_TITLE_SUFFIX="on $RELEASE_BRANCH"
           gh release create "v$NEW_RELEASE_VERSION" \
             --generate-notes \
-            --target $RELEASE_BRANCH
+            --target $RELEASE_BRANCH \
             --title "Release $NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
             $RELEASE_TYPE_FLAG
 
