@@ -1,5 +1,5 @@
-name: build-all-containers
-run-name: ${{ github.actor }} is learning GitHub Actions
+name: Build and push containers to GAR
+run-name:
 on:
   push:
     branches:
