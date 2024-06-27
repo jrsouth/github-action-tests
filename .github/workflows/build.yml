@@ -14,10 +14,10 @@ jobs:
 
   # We need a release version for our container tags
   create-release:
-    id: create-release
     runs-on: ubuntu-24.04
     steps:
       - name: Populate new release tag
+        id: create-release
         run: |
           echo 'NEW_RELEASE_TAG=1.2.3' >> "$GITHUB_OUTPUT"
           echo 'First sentence' >> "$GITHUB_STEP_SUMMARY"
