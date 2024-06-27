@@ -23,20 +23,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create a new release tag
+      - name: Create the new release's version
         id: create-release-tag
         run: |
-          CURRENT_RELEASE=$(gh release list --json tagName --jq '.[].tagName' | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
-          NEW_RELEASE=$(awk -F '.' '{print $1 "." $2 "." $3 + 1}' <<< $CURRENT_RELEASE)
-          echo "Current release: " $CURRENT_RELEASE
-          echo "New release: " $NEW_RELEASE
-          echo "NEW_RELEASE=$NEW_RELEASE" >> "$GITHUB_OUTPUT"
-          echo "Created new release $NEW_RELEASE" >> "$GITHUB_STEP_SUMMARY"
+          CURRENT_RELEASE_VERSION=$(gh release list --json tagName --jq '.[].tagName' | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
+          echo "Current release: " $CURRENT_RELEASE_VERSION
+          NEW_RELEASE_VERSION=$(awk -F '.' '{print $1 "." $2 "." $3 + 1}' <<< $CURRENT_RELEASE_VERSION)
+          echo "New release: " $NEW_RELEASE_VERSION
+          echo "NEW_RELEASE_VERSION=$NEW_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Prepared new release $NEW_RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Collect new release tag
+      - name: Create a GitHub release
         env:
-          NEW_RELEASE: ${{ steps.create-release-tag.outputs.NEW_RELEASE }}
-        run: echo "NEW_RELEASE is $NEW_RELEASE"
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: |
+          RELEASE_BRANCH=$(git branch --show-current)
+          [[ "$RELEASE_BRANCH" = "main" ]] && RELEASE_TYPE_FLAG="--latest" || RELEASE_TYPE_FLAG="--prerelease"
+          gh release create "v$NEW_RELEASE_VERSION" \
+            --generate-notes \
+            --target $RELEASE_BRANCH
+            --title "Release $NEW_RELEASE_VERSION$" \
+            $RELEASE_TYPE_FLAG
 
 
   # build-containers:
