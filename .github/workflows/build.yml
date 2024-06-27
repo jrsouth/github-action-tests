@@ -9,6 +9,8 @@ on:
   #     - closed
   #   branches:
   #     - 'main'
+env:
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
 
@@ -21,12 +23,10 @@ jobs:
         run: |
           CURRENT_RELEASE=$(gh release list --json tagName --jq '.[].tagName' | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
           NEW_RELEASE=$(awk -F '.' '{print $1 "." $2 "." $3 + 1}' <<< $CURRENT_RELEASE)
+          echo "Current release: " $CURRENT_RELEASE
+          echo "New release: " $NEW_RELEASE
           echo "NEW_RELEASE=$NEW_RELEASE" >> "$GITHUB_OUTPUT"
           echo "Created new release $NEW_RELEASE" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '# A heading?' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Bullet with `code` :nerd-face:' >> "$GITHUB_STEP_SUMMARY"
-
 
       - name: Collect new release tag
         env:
