@@ -11,8 +11,23 @@ on:
   #     - 'main'
 
 jobs:
+
+  # We need a release version for our container tags
+  create-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Populate new release tag
+        run: |
+          echo 'NEW_RELEASE_TAG=1.2.3' >> "$GITHUB_OUTPUT"
+          echo 'First sentence' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '# A heading?' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Bullet with `code` :nerd-face:' >> "$GITHUB_STEP_SUMMARY"
+
+
   build-containers:
     # if: github.event.pull_request.merged == true
+    needs: create-release
     runs-on: ubuntu-24.04
     permissions:
       contents: 'read'
@@ -22,6 +37,20 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Build images
+        run: docker compose -f docker/docker-compose.yml build
+
+
+  push-to-gar:
+    needs: build-containers
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+      - name: Collect new release tag
+        run: echo 'NEW_RELEASE_TAG is ' $NEW_RELEASE_TAG
 
       - name: Configure Google authentication
         id: 'auth'
@@ -35,12 +64,9 @@ jobs:
         with:
           version: '>= 363.0.0'
 
-      - name: Test gcloud
+      - name: Test gcloud auth connection
         run: gcloud config configurations list
 
-
-      - name: Build images
-        run: docker compose -f docker/docker-compose.yml build
 
     # - name: Push images
     #   run: docker compose -f docker/docker-compose.yml push
