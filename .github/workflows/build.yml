@@ -17,7 +17,12 @@ jobs:
   # We need a release version for our container tags
   create-release:
     runs-on: ubuntu-24.04
+
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Create a new release tag
         id: create-release-tag
         run: |
