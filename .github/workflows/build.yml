@@ -32,7 +32,6 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-
     steps:
 
       - name: Checkout
@@ -50,6 +49,7 @@ jobs:
       id-token: 'write'
     env:
       NEW_RELEASE_TAG: ${{ steps.create-release.outputs.NEW_RELEASE_TAG }}
+    steps:
 
       - name: Collect new release tag
         run: echo 'NEW_RELEASE_TAG is ' $NEW_RELEASE_TAG
