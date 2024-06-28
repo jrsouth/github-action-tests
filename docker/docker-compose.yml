@@ -13,11 +13,15 @@ services:
     volumes:
       - *project-volume
 
+
+
   app:
     build:
       context: ..
       dockerfile: docker/Dockerfile.app
-    image: ${PROJECT_NAME:-artifact-registry-test}/app
+    image: ${GOOGLE_DOCKER_REPOSITORY:-library}/${COMPOSE_PROJECT_NAME}-app:${NEW_RELEASE_VERSION:-latest}
+    labels:
+      production: true
     volumes:
       - *app-volume
     ports:
@@ -27,6 +31,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-    image: ${PROJECT_NAME:-artifact-registry-test}/api
+    # image: ${DOCKER_REPOSITORY:-local}/${PROJECT_NAME:-artifact-registry-test}-api
     volumes:
       - *api-volume

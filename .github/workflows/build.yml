@@ -1,5 +1,4 @@
 name: Build and push containers to GAR
-run-name:
 on:
   push:
     branches:
@@ -11,7 +10,9 @@ on:
   #     - 'main'
 env:
   GH_TOKEN: ${{ github.token }}
-  PROJECT_NAME: 'art-registry'
+  COMPOSE_PROJECT_NAME: 'art-registry'
+  GOOGLE_DOCKER_REPOSITORY: ${{ secrets.GOOGLE_DOCKER_REPOSITORY }}
+  GOOGLE_DOCKER_REGISTRY: ${{ secrets.GOOGLE_DOCKER_REGISTRY }}
 
 jobs:
 
@@ -25,10 +26,14 @@ jobs:
     steps:
 
 
-      # Get the code
+      # Chapter One: Get the code
 
       - name: Checkout the code
         uses: actions/checkout@v4
+
+      - name: Quick temp env check
+        run: env
+
 
       # Configure and test our Google credentials
       # See: [xxx todo: dig out the link]
@@ -48,7 +53,7 @@ jobs:
         run: gcloud config configurations list
 
       - name: Configure Docker authentication for the Google Artifact Registry
-        run: gcloud auth configure-docker ${{ secrets.GOOGLE_DOCKER_REGISTRY}} --quiet
+        run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
 
 
       # Now the work begins
@@ -56,7 +61,8 @@ jobs:
       - name: Create the new release's version number
         id: create-release-tag
         run: |
-          CURRENT_RELEASE_VERSION=$(gh release list --json tagName --jq '.[].tagName' | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
+          CURRENT_RELEASE_VERSION=$(gh release list --json tagName --jq '.[].tagName' \
+            | sed -e 's/^v//' | sort -hrt '.' -k 1,1 -k 2,2 -k 3,3 | head -n 1)
           echo "Current release: " $CURRENT_RELEASE_VERSION
           NEW_RELEASE_VERSION=$(awk -F '.' '{print $1 "." $2 "." $3 + 1}' <<< $CURRENT_RELEASE_VERSION)
           echo "New release: " $NEW_RELEASE_VERSION
@@ -64,15 +70,31 @@ jobs:
           echo "Prepared new release $NEW_RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build the docker images
-        run: docker compose -p $PROJECT_NAME -f docker/docker-compose.yml build
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: docker compose -f docker/docker-compose.yml build
 
-      # - name: Tag the docker images # (Might need native docker not compose...)
+      - name: Push the specific-version-tagged docker images
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: docker compose -f docker/docker-compose.yml push
+
+
+      # Re-tag and re-push as :latest if we're on the main branch
+
+      - name: Re-tag and push as :latest
+        if: github.ref == 'refs/heads/main'
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: |
+          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' \
+          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:$NEW_RELEASE_VERSION @:latest \
+          docker image list
+      # - name: Tag the :latest docker images # (Might need native docker here not compose...)
       #   env:
       #     NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-      #   run: docker compose -p $PROJECT_NAME -f docker/docker-compose.yml tag
+      #   run: docker compose -f docker/docker-compose.yml tag
 
-      - name: Push the docker images
-        run: docker compose -p $PROJECT_NAME -f docker/docker-compose.yml push
 
       # We do the GitHub release only after a successful build/push, otherwise
       # we'll have a GitHub release without any corresponding Google Artifact
