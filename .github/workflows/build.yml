@@ -171,7 +171,12 @@ jobs:
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          echo "Prepared new release $NEW_RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "Prepared new release v${NEW_RELEASE_VERSION}" >> "$GITHUB_STEP_SUMMARY"
           echo >> "$GITHUB_STEP_SUMMARY"
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
+          echo "### Release:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://github.com/${{ github.repository }}/releases/tag/v${NEW_RELEASE_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "### Images:" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}:{{.Tag}}' \
             | sed -e 's#^.*/\(.*\)#- [\1](https://\0)#' >> "$GITHUB_STEP_SUMMARY"
