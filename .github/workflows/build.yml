@@ -167,7 +167,7 @@ jobs:
             --title "v$NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
             $RELEASE_TYPE_FLAG
 
-      - name: Create a GitHub release
+      - name: Report
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
