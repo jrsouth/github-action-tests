@@ -4,18 +4,12 @@ run-name: Build and push images for '${{ github.ref_name }}' (by @${{ github.act
 on:
   push:
     branches:
-      - main
-      # - 'feature/**'
-  # pull_request:
-  #   types:
-  #     - closed
-  #   branches:
-  #     - 'main'
+      - main # Can we access the vars.RELEASE_BRANCH value here?
 
 env:
   GH_TOKEN: ${{ github.token }}
+  RELEASE_BRANCH: ${{ vars.RELEASE_BRANCH || 'main' }}
   COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME || 'artifact-registry-test' }}
-
   GOOGLE_DOCKER_REGISTRY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev
   GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
 
@@ -23,6 +17,7 @@ env:
 jobs:
 
   create-release:
+
     runs-on: ubuntu-24.04
     permissions:
       actions: write
@@ -32,25 +27,43 @@ jobs:
     steps:
 
 
-      # Chapter One: Get the code
+
+      # === Chapter One: Check our variables, and get the code ===
+
+      - name: Make sure we have the expected variables
+        run: |
+          [ -n "${{ vars.PROJECT_NAME }}" ] \
+            && [ -n "${{ vars.GOOGLE_PROJECT_ID }}" ] \
+            && [ -n "${{ vars.GOOGLE_LOCATION }}" ] \
+            && [ -n "${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}" ] \
+            && [ -n "${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}" ] \
+
+      - name: Exit early
+        run: exit 1
 
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Quick temp env check
-        run: echo ${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }} | sed -e 's/./& /g'
 
 
-      # Configure and test our Google credentials
+      # === Configure and test our Google credentials ===
+
       # See: https://github.com/google-github-actions/auth/tree/v2/?tab=readme-ov-file#direct-wif
       # See: https://cloud.google.com/sdk/gcloud/reference/projects/add-iam-policy-binding
       #      [@todo: dig out the other helpful links]
+      #
+      # We'll need the permission `artifactregistry.repositories.uploadArtifacts` which can
+      # be granted via the role `roles/artifactregistry.writer`:
+      #
+      #   gcloud projects add-iam-policy-binding <PROJECT-ID> \
+      #     --role=roles/artifactregistry.writer \
+      #     --member="principalSet://iam.googleapis.com/projects/<PROJECT-ID>/locations/global/workloadIdentityPools/<POOL-ID>/attribute.repository/<GITHUB-OWNER>/<REPO-NAME>"
 
       - name: Configure Google authentication
         uses: google-github-actions/auth@v2
         with:
           project_id: ${{ vars.GOOGLE_PROJECT_ID }}
-          # Format: projects/1234567890/locations/global/workloadIdentityPools/github
+          # Format: projects/<PROJECT-ID>/locations/global/workloadIdentityPools/<POOL-ID>/providers/<PROVIDER-ID>
           workload_identity_provider: ${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Set up Cloud SDK
@@ -63,12 +76,14 @@ jobs:
 
       - name: Configure Docker authentication for the Google Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
-        # run: |
-        #   gcloud auth configure-docker --quiet
-        #   gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
 
 
-      # Now the work begins
+
+      # === Create the next release's semantic versioning string ===
+
+      # This just increments the patch version of the previous GitHub release, nothing fancy.
+      # Requires a manual release to bump the major or minor versions. Does NOT handle pre-release
+      # version information (e.g., `-beta.3`) or build metadata (e.g., `+20240625154722.28c8c440bdc0`)
 
       - name: Create the new release's version number
         id: create-release-tag
@@ -81,24 +96,32 @@ jobs:
           echo "NEW_RELEASE_VERSION=$NEW_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
           echo "Prepared new release $NEW_RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
 
+
+
+      # === Build, tag, and push the required images ===
+
+      # Builds all images defined in our docker-compose.yml file, assuming that anything built will
+      # be part of the Artifact Repository. If we have any dev-only containers it could be wasted
+      # effort to build them here (although they won't get pushed anywhere, since we filter based on
+      # the output image's `reference`, which will only be set for "real" containers).
+      #
+      # We add the `:latest` tag if this workflow is running on the defined release branch.
+      #
+      # And we push them to the defined Google Artifact Repository
+
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: docker compose -f docker/docker-compose.yml build
 
-      # Re-tag as :latest if we're on the main branch
-      # ...Can we do this in gcloud, unclear if we're pushing the image again or just the tags
-
-      - name: Re-tag as :latest for the main branch # TODO: use a variable for the branch name test?
-        if: github.ref_name == 'main'
+      - name: Re-tag as :latest for the main branch
+        if: github.ref_name == ${{ env.RELEASE_BRANCH }}
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
           docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
             | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
 
-
-      # Send the container images up
       - name: Push the container images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
@@ -107,8 +130,11 @@ jobs:
             | xargs -n 1 docker image push --all-tags
 
 
-      # We do the GitHub release only after a successful build/push, otherwise
-      # we'll have a GitHub release without any corresponding Google Artifact
+
+      # === Create a GitHub release (or prerelease) ===
+
+      # We do the release only after a successful build and push, otherwise
+      # we'd have a GitHub release without any corresponding Google Artifact
       # Repository images - which in a very practical way isn't a real release.
       - name: Create a GitHub release
         env:
