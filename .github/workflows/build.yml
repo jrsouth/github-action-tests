@@ -37,6 +37,7 @@ jobs:
             && [ -n "${{ vars.GOOGLE_LOCATION }}" ] \
             && [ -n "${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}" ] \
             && [ -n "${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}" ] \
+            && [ -n "${{ secrets.NON_EXISTANT_SECRET }}" ] \
 
       - name: Exit early
         run: exit 1
