@@ -64,14 +64,6 @@ jobs:
         #   gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
 
 
-      # Fast fail to save testing time
-      # - name: Fast error
-      #   run: exit 1
-
-
-
-
-
       # Now the work begins
 
       - name: Create the new release's version number
@@ -98,19 +90,15 @@ jobs:
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          docker image list
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}'
           docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
             | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
-          docker image list
-          echo Done?
 
       - name: Push the container images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Id}}'
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Id}}' \
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.ID}}'
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.ID}}' \
             | xargs -n 1 docker image push
 
 
