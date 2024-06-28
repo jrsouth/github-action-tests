@@ -1,4 +1,6 @@
 name: Build and push containers to GAR
+run-name: Build and push container images for branch ${{ github.ref_name }} (by @${{ github.actor }})
+
 on:
   push:
     branches:
@@ -8,12 +10,14 @@ on:
   #     - closed
   #   branches:
   #     - 'main'
+
 env:
   GH_TOKEN: ${{ github.token }}
   COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME || 'artifact-registry-test' }}
 
   GOOGLE_DOCKER_REGISTRY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev
-  GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_DOCKER_REGISTRY }}/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
+  GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
+
 
 jobs:
 
@@ -90,7 +94,7 @@ jobs:
       # ...Can we do this in gcloud, unclear if we're pushing the image again or just the tags
 
       - name: Re-tag and as :latest for the main branch # TODO: use a variable for the branch name?
-        if: github.ref == 'refs/heads/main'
+        if: github.ref_name == 'main'
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
