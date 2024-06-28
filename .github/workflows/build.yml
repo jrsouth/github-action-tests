@@ -85,7 +85,7 @@ jobs:
       # Re-tag as :latest if we're on the main branch
       # ...Can we do this in gcloud, unclear if we're pushing the image again or just the tags
 
-      - name: Re-tag and as :latest for the main branch # TODO: use a variable for the branch name?
+      - name: Re-tag as :latest for the main branch # TODO: use a variable for the branch name test?
         if: github.ref_name == 'main'
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
@@ -93,12 +93,14 @@ jobs:
           docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
             | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
 
+
+      # Send the container images up
       - name: Push the container images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.ID}}'
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.ID}}' \
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}:{{.Tag}}'
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}:{{.Tag}}' \
             | xargs -n 1 docker image push
 
 
