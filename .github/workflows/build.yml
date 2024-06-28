@@ -81,10 +81,10 @@ jobs:
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' \
-          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:$NEW_RELEASE_VERSION @:latest \
-          docker image list
-
+          docker image list \
+          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/\*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' \
+          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/\*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:$NEW_RELEASE_VERSION @:latest \
+          echo Done?
 
       - name: Push the specific-version-tagged docker images
         env:
