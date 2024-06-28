@@ -53,6 +53,8 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
+      - name: Check our docker-compose file exits
+        run: '[ -f "$COMPOSE_FILE" ]'
 
 
       # ===================================================
