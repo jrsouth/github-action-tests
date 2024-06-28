@@ -11,8 +11,16 @@ on:
 env:
   GH_TOKEN: ${{ github.token }}
   COMPOSE_PROJECT_NAME: 'art-registry'
-  GOOGLE_DOCKER_REPOSITORY: ${{ secrets.GOOGLE_DOCKER_REPOSITORY }}
-  GOOGLE_DOCKER_REGISTRY: ${{ secrets.GOOGLE_DOCKER_REGISTRY }}
+
+  # GOOGLE_DOCKER_REPOSITORY: ${{ secrets.GOOGLE_DOCKER_REPOSITORY }}
+  # GOOGLE_DOCKER_REGISTRY: ${{ secrets.GOOGLE_DOCKER_REGISTRY }}
+
+  GOOGLE_PROJECT_ID: burnished-edge-427513-m7
+  GOOGLE_LOCATION: europe-west2
+  GOOGLE_ARTIFACT_REPOSITORY: docker
+
+  GOOGLE_DOCKER_REGISTRY: ${GOOGLE_LOCATION}-docker.pkg.dev
+  GOOGLE_DOCKER_REPOSITORY: ${GOOGLE_DOCKER_REGISTRY}/${GOOGLE_PROJECT_ID}/${GOOGLE_ARTIFACT_REPOSITORY}
 
 jobs:
 
@@ -50,11 +58,15 @@ jobs:
           version: '>= 363.0.0'
 
       - name: Test gcloud auth connection
-        run: gcloud config configurations list
+        run: gcloud info
 
       - name: Configure Docker authentication for the Google Artifact Registry
-        run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
+        run: |
+          gcloud auth configure-docker --quiet
+          gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
 
+      - name: Fast error
+        run: exit 1
 
       # Now the work begins
 
