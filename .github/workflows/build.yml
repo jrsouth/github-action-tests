@@ -17,7 +17,9 @@ env:
 
   CURRENT_BRANCH: ${{ github.ref_name }}
 
-  COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+  COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
+  COMPOSE_FILE: ${{ vars.COMPOSE_FILE || './docker-compose.yml' }}
+
   GOOGLE_DOCKER_REGISTRY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev
   GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
 
@@ -42,7 +44,7 @@ jobs:
 
       - name: Make sure we have the expected variables
         run: |
-          [ -n "${{ vars.PROJECT_NAME }}" ] \
+          [ -n "${{ vars.COMPOSE_PROJECT_NAME }}" ] \
             && [ -n "${{ vars.GOOGLE_PROJECT_ID }}" ] \
             && [ -n "${{ vars.GOOGLE_LOCATION }}" ] \
             && [ -n "${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}" ] \
@@ -114,9 +116,9 @@ jobs:
       # ==================================================
 
       # Builds all images defined in our docker-compose.yml file, assuming that anything built will
-      # be part of the Artifact Repository. If we have any dev-only containers it could be wasted
-      # effort to build them here (although they won't get pushed anywhere, since we filter based on
-      # the output image's `reference`, which will only be set for "real" containers).
+      # be part of the Artifact Repository. (If we have any dev-only containers it could be wasted
+      # effort to build them here, although they won't get pushed anywhere since we filter based on
+      # the output image's `reference`, and that will only be set for "real" containers.)
       #
       # We add the `:latest` tag if this workflow is running on the defined release branch.
       #
@@ -125,7 +127,7 @@ jobs:
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker compose -f docker/docker-compose.yml build
+        run: docker compose build
 
       - name: Re-tag as :latest for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
