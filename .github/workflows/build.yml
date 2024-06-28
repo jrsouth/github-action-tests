@@ -36,7 +36,7 @@ jobs:
 
 
       # Configure and test our Google credentials
-      # See: [xxx todo: dig out the link]
+      # See: [@todo: dig out the links]
 
       - name: Configure Google authentication
         uses: google-github-actions/auth@v2
@@ -82,8 +82,8 @@ jobs:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
           docker image list
-          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/\*:$NEW_RELEASE_VERSION" --format='{{.Repository}}'
-          docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/\*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:$NEW_RELEASE_VERSION @:latest
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}'
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
           docker image list
           echo Done?
 
