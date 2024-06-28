@@ -74,13 +74,7 @@ jobs:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: docker compose -f docker/docker-compose.yml build
 
-      - name: Push the specific-version-tagged docker images
-        env:
-          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker compose -f docker/docker-compose.yml push
-
-
-      # Re-tag and re-push as :latest if we're on the main branch
+      # Re-tag as :latest if we're on the main branch
 
       - name: Re-tag and push as :latest
         if: github.ref == 'refs/heads/main'
@@ -90,10 +84,12 @@ jobs:
           docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' \
           docker image list --filter=reference="${GOOGLE_DOCKER_REPOSITORY}/*:$NEW_RELEASE_VERSION" --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:$NEW_RELEASE_VERSION @:latest \
           docker image list
-      # - name: Tag the :latest docker images # (Might need native docker here not compose...)
-      #   env:
-      #     NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-      #   run: docker compose -f docker/docker-compose.yml tag
+
+
+      - name: Push the specific-version-tagged docker images
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: docker compose -f docker/docker-compose.yml push
 
 
       # We do the GitHub release only after a successful build/push, otherwise
