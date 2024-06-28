@@ -22,7 +22,7 @@ jobs:
     permissions:
       actions: write
       contents: write
-      id-token: 'write'
+      id-token: write
 
     steps:
 
@@ -54,12 +54,19 @@ jobs:
         run: gcloud info
 
       - name: Configure Docker authentication for the Google Artifact Registry
-        run: |
-          gcloud auth configure-docker --quiet
-          gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
+        run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
+        # run: |
+        #   gcloud auth configure-docker --quiet
+        #   gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
 
-      - name: Fast error
-        run: exit 1
+
+      # Fast fail to save testing time
+      # - name: Fast error
+      #   run: exit 1
+
+
+
+
 
       # Now the work begins
 
@@ -80,8 +87,9 @@ jobs:
         run: docker compose -f docker/docker-compose.yml build
 
       # Re-tag as :latest if we're on the main branch
+      # ...Can we do this in gcloud, unclear if we're pushing the image again or just the tags
 
-      - name: Re-tag and push as :latest
+      - name: Re-tag and as :latest for the main branch # TODO: use a variable for the branch name?
         if: github.ref == 'refs/heads/main'
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
@@ -95,7 +103,7 @@ jobs:
       - name: Push the specific-version-tagged docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker compose -f docker/docker-compose.yml push
+        run: docker image push --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*
 
 
       # We do the GitHub release only after a successful build/push, otherwise
