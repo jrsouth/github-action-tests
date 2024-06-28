@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      # - 'feature/**'
   # pull_request:
   #   types:
   #     - closed
@@ -115,9 +116,9 @@ jobs:
         run: |
           RELEASE_BRANCH=$(git branch --show-current)
           [[ "$RELEASE_BRANCH" = "main" ]] && RELEASE_TYPE_FLAG="--latest" || RELEASE_TYPE_FLAG="--prerelease"
-          [[ "$RELEASE_BRANCH" = "main" ]] || RELEASE_TITLE_SUFFIX="on $RELEASE_BRANCH"
+          [[ "$RELEASE_BRANCH" = "main" ]] || RELEASE_TITLE_SUFFIX=" - $RELEASE_BRANCH"
           gh release create "v$NEW_RELEASE_VERSION" \
             --generate-notes \
             --target $RELEASE_BRANCH \
-            --title "Release v$NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
+            --title "v$NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
             $RELEASE_TYPE_FLAG
