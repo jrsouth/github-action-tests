@@ -4,14 +4,17 @@ run-name: Push images for '${{ github.ref_name }}' (by @${{ github.actor }})
 on:
   push:
     branches:
-      - main # Is there a way to access ${vars.XXX} here rather than hard-coding `main`? e.g., `${{ vars.RELEASE_BRANCH | 'main' }}`
+      # Is there a way to access ${vars.XXX} here rather than hard-coding `main`? e.g., `${{ vars.RELEASE_BRANCH | 'main' }}`
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  RELEASE_BRANCH: 'main' # If we can ever reference vars within the `on:` section, this could collect a shared value instead of hard-coding
+  # If we can ever reference vars within the `on:` section, this could collect a shared value instead of hard-coding
+  RELEASE_BRANCH: 'main'
+
   CURRENT_BRANCH: ${{ github.ref_name }}
 
   COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME }}
