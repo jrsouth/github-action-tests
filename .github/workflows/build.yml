@@ -24,6 +24,7 @@ env:
 jobs:
 
   create-release:
+    name: Create container images and push them to Google
     runs-on: ubuntu-24.04
     permissions:
       actions: write
