@@ -1,10 +1,10 @@
-name: Build and push containers to GAR
-run-name: Build and push images for '${{ github.ref_name }}' (by @${{ github.actor }})
+name: Build and push container images to a Google Artifact Repository
+run-name: Push images for '${{ github.ref_name }}' (by @${{ github.actor }})
 
 on:
   push:
     branches:
-      - main # Can we access the vars.RELEASE_BRANCH value here?
+      - ${{ vars.RELEASE_BRANCH || 'main' }} # Can we access the vars.RELEASE_BRANCH value here?
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -27,7 +27,6 @@ jobs:
     steps:
 
 
-
       # === Chapter One: Check our variables, and get the code ===
 
       - name: Make sure we have the expected variables
@@ -37,8 +36,6 @@ jobs:
             && [ -n "${{ vars.GOOGLE_LOCATION }}" ] \
             && [ -n "${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}" ] \
             && [ -n "${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}" ] \
-            && [ -n "${{ secrets.NON_EXISTANT_SECRET }}" ] \
-
       - name: Exit early
         run: exit 1
 
@@ -51,7 +48,7 @@ jobs:
 
       # See: https://github.com/google-github-actions/auth/tree/v2/?tab=readme-ov-file#direct-wif
       # See: https://cloud.google.com/sdk/gcloud/reference/projects/add-iam-policy-binding
-      #      [@todo: dig out the other helpful links]
+      #      [@todo: dig out other helpful links]
       #
       # We'll need the permission `artifactregistry.repositories.uploadArtifacts` which can
       # be granted via the role `roles/artifactregistry.writer`:
@@ -136,7 +133,8 @@ jobs:
 
       # We do the release only after a successful build and push, otherwise
       # we'd have a GitHub release without any corresponding Google Artifact
-      # Repository images - which in a very practical way isn't a real release.
+      # Repository images -- which in a very practical way isn't a real release.
+
       - name: Create a GitHub release
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
