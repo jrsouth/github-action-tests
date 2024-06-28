@@ -1,5 +1,5 @@
 name: Build and push containers to GAR
-run-name: Build and push container images for branch ${{ github.ref_name }} (by @${{ github.actor }})
+run-name: Build and push images for '${{ github.ref_name }}' (by @${{ github.actor }})
 
 on:
   push:
@@ -100,14 +100,18 @@ jobs:
         run: |
           docker image list
           docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}'
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
+            | xargs -I '@' -n 1 docker tag @:${NEW_RELEASE_VERSION} @:latest
           docker image list
           echo Done?
 
-      - name: Push the specific-version-tagged docker images
+      - name: Push the container images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker image push --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*
+        run: |
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Id}}'
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Id}}' \
+            | xargs -n 1 docker image push
 
 
       # We do the GitHub release only after a successful build/push, otherwise
