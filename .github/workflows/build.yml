@@ -102,9 +102,8 @@ jobs:
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}:{{.Tag}}'
-          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}:{{.Tag}}' \
-            | xargs -n 1 docker image push
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}' \
+            | xargs -n 1 docker image push --all-tags
 
 
       # We do the GitHub release only after a successful build/push, otherwise
