@@ -10,17 +10,10 @@ on:
   #     - 'main'
 env:
   GH_TOKEN: ${{ github.token }}
-  COMPOSE_PROJECT_NAME: 'art-registry'
+  COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME || 'artifact-registry-test' }}
 
-  # GOOGLE_DOCKER_REPOSITORY: ${{ secrets.GOOGLE_DOCKER_REPOSITORY }}
-  # GOOGLE_DOCKER_REGISTRY: ${{ secrets.GOOGLE_DOCKER_REGISTRY }}
-
-  GOOGLE_PROJECT_ID: burnished-edge-427513-m7
-  GOOGLE_LOCATION: europe-west2
-  GOOGLE_ARTIFACT_REPOSITORY: docker
-
-  GOOGLE_DOCKER_REGISTRY: ${GOOGLE_LOCATION}-docker.pkg.dev
-  GOOGLE_DOCKER_REPOSITORY: ${GOOGLE_DOCKER_REGISTRY}/${GOOGLE_PROJECT_ID}/${GOOGLE_ARTIFACT_REPOSITORY}
+  GOOGLE_DOCKER_REGISTRY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev
+  GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_DOCKER_REGISTRY }}/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
 
 jobs:
 
@@ -49,7 +42,7 @@ jobs:
       - name: Configure Google authentication
         uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ secrets.GOOGLE_PROJECT_ID }}
+          project_id: ${{ vars.GOOGLE_PROJECT_ID }}
           workload_identity_provider: ${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Set up Cloud SDK
