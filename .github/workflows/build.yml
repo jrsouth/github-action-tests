@@ -4,20 +4,26 @@ run-name: Push images for '${{ github.ref_name }}' (by @${{ github.actor }})
 on:
   push:
     branches:
-      - ${{ vars.RELEASE_BRANCH || 'main' }} # Can we access the vars.RELEASE_BRANCH value here?
+      - main # Is there a way to access ${vars.XXX} here rather than hard-coding `main`? e.g., `${{ vars.RELEASE_BRANCH | 'main' }}`
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  GH_TOKEN: ${{ github.token }}
-  RELEASE_BRANCH: ${{ vars.RELEASE_BRANCH || 'main' }}
-  COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME || 'artifact-registry-test' }}
+  RELEASE_BRANCH: 'main' # If we can ever reference vars within the `on:` section, this could collect a shared value instead of hard-coding
+  CURRENT_BRANCH: ${{ github.ref_name }}
+
+  COMPOSE_PROJECT_NAME: ${{ vars.PROJECT_NAME }}
   GOOGLE_DOCKER_REGISTRY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev
   GOOGLE_DOCKER_REPOSITORY: ${{ vars.GOOGLE_LOCATION }}-docker.pkg.dev/${{ vars.GOOGLE_PROJECT_ID }}/${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}
+
+  GH_TOKEN: ${{ github.token }}
 
 
 jobs:
 
   create-release:
-
     runs-on: ubuntu-24.04
     permissions:
       actions: write
@@ -26,8 +32,9 @@ jobs:
 
     steps:
 
-
-      # === Chapter One: Check our variables, and get the code ===
+      # ===================================================================
+      # ===  Chapter One: Check our GitHub variables, and get the code  ===
+      # ===================================================================
 
       - name: Make sure we have the expected variables
         run: |
@@ -36,15 +43,15 @@ jobs:
             && [ -n "${{ vars.GOOGLE_LOCATION }}" ] \
             && [ -n "${{ vars.GOOGLE_ARTIFACT_REPOSITORY }}" ] \
             && [ -n "${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}" ] \
-      - name: Exit early
-        run: exit 1
 
       - name: Checkout the code
         uses: actions/checkout@v4
 
 
 
-      # === Configure and test our Google credentials ===
+      # ===================================================
+      # ===  Configure and test our Google credentials  ===
+      # ===================================================
 
       # See: https://github.com/google-github-actions/auth/tree/v2/?tab=readme-ov-file#direct-wif
       # See: https://cloud.google.com/sdk/gcloud/reference/projects/add-iam-policy-binding
@@ -77,7 +84,9 @@ jobs:
 
 
 
-      # === Create the next release's semantic versioning string ===
+      # ==============================================================
+      # ===  Create the next release's semantic versioning string  ===
+      # ==============================================================
 
       # This just increments the patch version of the previous GitHub release, nothing fancy.
       # Requires a manual release to bump the major or minor versions. Does NOT handle pre-release
@@ -96,7 +105,9 @@ jobs:
 
 
 
-      # === Build, tag, and push the required images ===
+      # ==================================================
+      # ===  Build, tag, and push the required images  ===
+      # ==================================================
 
       # Builds all images defined in our docker-compose.yml file, assuming that anything built will
       # be part of the Artifact Repository. If we have any dev-only containers it could be wasted
@@ -112,7 +123,7 @@ jobs:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: docker compose -f docker/docker-compose.yml build
 
-      - name: Re-tag as :latest for the main branch
+      - name: Re-tag as :latest for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
@@ -129,7 +140,9 @@ jobs:
 
 
 
-      # === Create a GitHub release (or prerelease) ===
+      # =================================================
+      # ===  Create a GitHub release (or prerelease)  ===
+      # =================================================
 
       # We do the release only after a successful build and push, otherwise
       # we'd have a GitHub release without any corresponding Google Artifact
@@ -139,11 +152,10 @@ jobs:
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          RELEASE_BRANCH=$(git branch --show-current)
-          [[ "$RELEASE_BRANCH" = "main" ]] && RELEASE_TYPE_FLAG="--latest" || RELEASE_TYPE_FLAG="--prerelease"
-          [[ "$RELEASE_BRANCH" = "main" ]] || RELEASE_TITLE_SUFFIX=" - $RELEASE_BRANCH"
+          [[ "$CURRENT_BRANCH" = "$RELEASE_BRANCH" ]] && RELEASE_TYPE_FLAG="--latest" || RELEASE_TYPE_FLAG="--prerelease"
+          [[ "$CURRENT_BRANCH" = "$RELEASE_BRANCH" ]] || RELEASE_TITLE_SUFFIX=" - $CURRENT_BRANCH"
           gh release create "v$NEW_RELEASE_VERSION" \
             --generate-notes \
-            --target $RELEASE_BRANCH \
+            --target $CURRENT_BRANCH \
             --title "v$NEW_RELEASE_VERSION$RELEASE_TITLE_SUFFIX" \
             $RELEASE_TYPE_FLAG
