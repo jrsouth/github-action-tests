@@ -18,8 +18,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.app
-      cache_from: [type=gha]
-      cache_to: [type=gha,mode=max]
+      cache_from: ['type=gha']
+      cache_to: ['type=gha,mode=max']
     image: ${GOOGLE_DOCKER_REPOSITORY:-library}/${COMPOSE_PROJECT_NAME}-app:${NEW_RELEASE_VERSION:-latest}
     volumes:
       - *app-volume
@@ -31,8 +31,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-      cache_from: [type=gha]
-      cache_to: [type=gha,mode=max]
+      cache_from: ['type=gha']
+      cache_to: ['type=gha,mode=max']
     image: ${GOOGLE_DOCKER_REPOSITORY:-library}/${COMPOSE_PROJECT_NAME}-api:${NEW_RELEASE_VERSION:-latest}
     volumes:
       - *api-volume
