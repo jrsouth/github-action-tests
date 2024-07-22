@@ -131,7 +131,7 @@ jobs:
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker compose build
+        run: COMPOSE_DOCKER_CLI_BUILD=1 docker compose build
 
       - name: Re-tag as :latest for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
