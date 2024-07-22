@@ -9,8 +9,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.cli
-      cache_from: ['type=local,src=./cache']
-      cache_to: ['type=local,dest=./cache,mode=max']
+      cache_from: ['type=local,src=./cache/cli']
+      cache_to: ['type=local,dest=./cache/cli,mode=max']
     tty: true
     volumes:
       - *project-volume
@@ -20,8 +20,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.app
-      cache_from: ['type=local,src=./cache']
-      cache_to: ['type=local,dest=./cache,mode=max']
+      cache_from: ['type=local,src=./cache/app']
+      cache_to: ['type=local,dest=./cache/app,mode=max']
     image: ${GOOGLE_DOCKER_REPOSITORY:-library}/${COMPOSE_PROJECT_NAME}-app:${NEW_RELEASE_VERSION:-latest}
     volumes:
       - *app-volume
@@ -33,8 +33,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-      cache_from: ['type=local,src=./cache']
-      cache_to: ['type=local,dest=./cache,mode=max']
+      cache_from: ['type=local,src=./cache/api']
+      cache_to: ['type=local,dest=./cache/api,mode=max']
     image: ${GOOGLE_DOCKER_REPOSITORY:-library}/${COMPOSE_PROJECT_NAME}-api:${NEW_RELEASE_VERSION:-latest}
     volumes:
       - *api-volume
