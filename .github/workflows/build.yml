@@ -132,7 +132,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: docker/cache
-          key: ${{ github.repository }}/${{ github.run_id }}
+          key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
           save-always: true
 
