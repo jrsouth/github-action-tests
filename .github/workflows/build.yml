@@ -128,7 +128,7 @@ jobs:
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: docker compose build
+        run: docker compose build --cache-from type=gha --cache-to type=gha,mode=max
 
       - name: Re-tag as :latest for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
