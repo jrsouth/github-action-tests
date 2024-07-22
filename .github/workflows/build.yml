@@ -128,7 +128,7 @@ jobs:
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up a github action cache for use as docker layer cache
+      - name: Connect a docker layer cache
         uses: actions/cache@v4
         with:
           path: docker/cache
