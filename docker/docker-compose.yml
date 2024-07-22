@@ -9,8 +9,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.cli
-      # cache_from: ['type=gha,scope=jrsouth/github-action-tests/v1']
-      # cache_to: ['type=gha,scope=jrsouth/github-action-tests/v1,mode=max']
       cache_from: ['type=local,src=./cache']
       cache_to: ['type=local,dest=./cache,mode=max']
     tty: true
