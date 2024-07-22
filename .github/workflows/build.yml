@@ -132,12 +132,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: docker/cache
-          key: ${{ github.repository}}_v1
+          key: ${{ github.repository }}/${{ github.run_id }}
+          restore-keys: ${{ github.repository }}
 
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: cd docker && mkdir cache && docker buildx bake && find .
+        run: cd docker && mkdir cache && docker buildx bake --load && find .
 
       - name: Re-tag as `:latest` for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
