@@ -166,16 +166,8 @@ jobs:
 
       - name: Create local cache-config file
         run: |
-          docker compose -f docker/docker-compose.yml config --format json \
-            | jq '{"services": .services | map_values(select(.build != null)) \
-              | with_entries({key:(.key),value: \
-                {"build": { \
-                  "cache_from":["type=gha"], \
-                  "cache_to":["type=gha,mode=max"] \
-                }} \
-              })}' \
-            > docker/docker-compose.cache.yml
-            cat docker/docker-compose.cache.yml
+          docker compose -f docker/docker-compose.yml config --format json | jq '{"services":(.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":["type=gha"],"cache_to":["type=gha,mode=max"]}}}))}' > docker/docker-compose.cache.yml
+          cat docker/docker-compose.cache.yml
 
       - name: Expose GitHub Runtime to enable `gha` backend
         uses: crazy-max/ghaction-github-runtime@v3
