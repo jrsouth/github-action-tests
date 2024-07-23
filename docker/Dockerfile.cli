@@ -7,5 +7,6 @@ WORKDIR /project
 
 RUN sleep 120
 
+# Dirty run-forever hack
 # ENTRYPOINT ["tail"]
 # CMD ["-f","/dev/null"]
