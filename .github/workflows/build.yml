@@ -134,7 +134,6 @@ jobs:
           path: docker/cache
           key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
-          save-always: true
 
       - name: Build the docker images
         env:
