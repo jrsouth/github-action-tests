@@ -128,12 +128,19 @@ jobs:
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
-      # - name: Connect a docker layer cache
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: docker/cache
-      #     key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-      #     restore-keys: ${{ github.repository }}
+      - name: Connect a docker layer cache
+        uses: actions/cache@v4
+        with:
+          path: docker/cache
+          key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+          restore-keys: ${{ github.repository }}
+
+      - name: Create local cache-config file
+        run: |
+          docker compose -f docker/docker-compose.yml config --format json \
+            | jq '{"services":.services|map_values(select(.build != null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
+            > docker/docker-compose.cache.yml
+            cat docker/docker-compose.cache.yml
 
       - name: Build the docker images
         env:
@@ -141,9 +148,9 @@ jobs:
         run: |
           cd docker && mkdir -p cache
             docker buildx bake \
-              --load \
-              --set *.cache-to=type=gha,mode=max \
-              --set *.cache-from=type=gha
+              -f docker-compose.yml \
+              -f docker-compose.cache.yml \
+              --load
             find .
             jq --version
 
