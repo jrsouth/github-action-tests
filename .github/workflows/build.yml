@@ -141,7 +141,6 @@ jobs:
           docker compose -f docker/docker-compose.yml config --format json \
             | jq '{"services":.services|map_values(select(.build != null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
             > docker/docker-compose.cache.yml
-            cat docker/docker-compose.cache.yml
 
       - name: Build the docker images
         env:
@@ -152,8 +151,6 @@ jobs:
               -f docker-compose.yml \
               -f docker-compose.cache.yml \
               --load
-            find .
-            jq --version
 
       - name: Re-tag as `:latest` for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
