@@ -6,6 +6,7 @@ on:
     branches:
       # Is there a way to access ${vars.XXX} here rather than hard-coding `main`? e.g., `${{ vars.RELEASE_BRANCH | 'main' }}`
       - main
+      - feature/*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
