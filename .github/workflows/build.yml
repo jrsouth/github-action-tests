@@ -129,12 +129,14 @@ jobs:
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
-      # We're using GitHub cache directly ― using the `gha` cache backend did not work for building
-      # images from a compose file, seems to only take affect when calling `docker build` directly.
+      # We're using GitHub caches directly ― using the `gha` cache backend did not work for building
+      # multiple images from a compose file, due to clobbering of the index.json file.
       #
       # Since GitHub caches are write-once, this leaves a trail of previous cache versions, which it
       # might be nice to clean up as we go via explicit cache-restore and cache-save actions, along
       # with deletion of the previous cache (AFTER saving the current one).
+      #
+      # @see "force-deletion" in https://github.com/actions/cache/blob/main/tips-and-workarounds.md
       - name: Connect a docker layer cache
         uses: actions/cache@v4
         with:
@@ -142,7 +144,7 @@ jobs:
           key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
 
-      # This giant `jq` filter creates a YML file which injects unique `cache_from` and `cache_to`
+      # This giant `jq` filter creates a YML file which injects *unique* `cache_from` and `cache_to`
       # values into each service definition which uses a `build` step, allowing the GitHub cache
       # to play nicely with multiple (simultaneous) builds.
       #
