@@ -6,6 +6,7 @@ on:
     branches:
       # Is there a way to access ${vars.XXX} here rather than hard-coding `main`? e.g., `${{ vars.RELEASE_BRANCH | 'main' }}`
       - main
+      - feature/*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -128,6 +129,12 @@ jobs:
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
+      # We're using GitHub cache directly ― using the `gha` cache backend did not work for building
+      # images from a compose file, seems to only take affect when calling `docker build` directly.
+      #
+      # Since GitHub caches are write-once, this leaves a trail of previous cache versions, which it
+      # might be nice to clean up as we go via explicit cache-restore and cache-save actions, along
+      # with deletion of the previous cache (AFTER saving the current one).
       - name: Connect a docker layer cache
         uses: actions/cache@v4
         with:
@@ -135,24 +142,31 @@ jobs:
           key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
 
+      # This giant `jq` filter creates a YML file which injects unique `cache_from` and `cache_to`
+      # values into each service definition which uses a `build` step, allowing the GitHub cache
+      # to play nicely with multiple (simultaneous) builds.
+      #
+      # This causes redundancy if a base image is reused, since it's stored separately in each
+      # service's cache, but using a single shared cache location results in cache misses, as only
+      # the chronologically-final index.json is stored ― which misses any references to the other
+      # images' layers. (This is also why the docker `gha` backend fails to work correctly.)
       - name: Create local cache-config file
         run: |
+          mkdir -p docker/cache
           docker compose -f docker/docker-compose.yml config --format json \
-            | jq '{"services":.services|map_values(select(.build != null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
+            | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}'
             > docker/docker-compose.cache.yml
-            cat docker/docker-compose.cache.yml
+          cat docker/docker-compose.cache.yml
 
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
-          cd docker && mkdir -p cache
-            docker buildx bake \
-              -f docker-compose.yml \
-              -f docker-compose.cache.yml \
-              --load
-            find .
-            jq --version
+          cd docker
+          docker buildx bake \
+            -f docker-compose.yml \
+            -f docker-compose.cache.yml \
+            --load
 
       - name: Re-tag as `:latest` for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
