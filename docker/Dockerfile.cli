@@ -5,5 +5,7 @@ RUN mkdir -p /project
 USER node
 WORKDIR /project
 
+RUN sleep 120
+
 # ENTRYPOINT ["tail"]
 # CMD ["-f","/dev/null"]

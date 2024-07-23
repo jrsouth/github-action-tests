@@ -7,4 +7,8 @@ WORKDIR /app
 RUN npm ci
 
 USER node
+
+# 120sec delay to demonstrate layer build cache
+RUN npm run delay
+
 CMD [ "npm", "run", "serve" ]
