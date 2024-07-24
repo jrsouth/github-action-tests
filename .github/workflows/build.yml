@@ -172,17 +172,7 @@ jobs:
           docker compose -f $COMPOSE_FILE -f ${{ runner.temp }}/docker-compose.cache.json config \
             > ${{ runner.temp }}/docker-compose.buildx.yml
 
-
-
-
-      - name: '[TEST] check our combined compose files merged as expected'
-        run: cat ${{ runner.temp }}/docker-compose.buildx.yml
-      - name: '[TEST] Quick fail'
-        run: $(exit 1)
-
-
-
-
+      # To use the `local` cache backend we need to use the docker-container driver (via buildx)
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
