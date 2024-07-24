@@ -114,9 +114,9 @@ jobs:
 
 
 
-      # ====================================================
-      # ===  Set up caching and a suitable compose file  ===
-      # ====================================================
+      # ===========================================================
+      # ===  Set up caching and create a suitable compose file  ===
+      # ===========================================================
 
       # We're using GitHub caches directly ― using the `gha` cache backend did not work for building
       # multiple images from a compose file, due to clobbering of the index.json file.
@@ -131,7 +131,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker-cache
-          key: docker-cache/${{ github.run_id }}/${{ github.run_attempt }}/v${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+          key: docker-cache/${{ github.run_id }}/v${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: docker-cache/
 
       # To use the `local` cache backend we need to use the docker-container driver (via buildx)
@@ -203,7 +203,7 @@ jobs:
 
       # We do the release only after a successful build and push, otherwise
       # we'd have a GitHub release without any corresponding Google Artifact
-      # Repository images -- which in a very practical way isn't a real release.
+      # Repository images ― which in a very practical way isn't a real release.
 
       - name: Create a GitHub release
         env:
