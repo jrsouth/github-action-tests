@@ -139,7 +139,7 @@ jobs:
       - name: Restore docker layer cache
         uses: actions/cache@v4
         with:
-          path: docker/cache
+          path: ${{ runner.temp }}/docker-cache
           key: docker-cache/${{ github.run_id }}/${{ github.run_attempt }}/v${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: docker-cache/
 
@@ -162,7 +162,7 @@ jobs:
       - name: Create local cache-config file
         run: |
           docker compose config --format json \
-            | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
+            | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=${{ runner.temp }}/docker-cache/"+.key)],"cache_to":[("type=local,dest=${{ runner.temp }}/docker-cache/"+.key+",mode=max")]}}})}' \
             > ${{ runner.temp }}/docker-compose.cache.json
 
       # `docker buildx bake` has issues with relative working directory contexts, so we pass the
@@ -175,7 +175,7 @@ jobs:
 
 
       - name: '[TEST] See what our final compose looks like'
-        run: cat ${{ runner.temp }}/docker-compose.buildx.yml && $(exit 1)
+        run: cat ${{ runner.temp }}/docker-compose.buildx.yml
 
 
 
