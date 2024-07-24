@@ -140,7 +140,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: docker/cache
-          key: docker-cache/${{ github.run_id }}/${{ github.run_attempt }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+          key: docker-cache/${{ github.run_id }}/${{ github.run_attempt }}/v${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: docker-cache/
 
 
@@ -159,18 +159,25 @@ jobs:
       # service's cache, but using a single/shared cache location results in cache misses, as only
       # the chronologically-final index.json is stored ― which excludes any references to the other
       # images' unique layers. (This is also why the docker `gha` backend fails to work correctly.)
-
       - name: Create local cache-config file
         run: |
-          docker compose -f docker/docker-compose.yml config --format json \
+          docker compose config --format json \
             | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
-            > ${{ runner.temp}}/docker-compose.cache.json
+            > ${{ runner.temp }}/docker-compose.cache.json
+
+          docker compose -f
 
 
 
+      # `docker buildx bake` has issues with relative working directory contexts, so we pass the
+      # combined files through `docker compose config` to generate a version with absolute paths.
+      - name: 'Create a compose file for use by buildx'
+        run: |
+          docker compose -f $COMPOSE_FILE -f ${{ runner.temp }}/docker-compose.cache.json config \
+            > ${{ runner.temp }}/docker-compose.buildx.yml
 
-      - name: '[TEST] check our combined compose files merge as expected'
-        run: docker compose -f $COMPOSE_FILE -f ${{ runner.temp}}/docker-compose.cache.json config
+      - name: '[TEST] check our combined compose files merged as expected'
+        run: cat ${{ runner.temp }}/docker-compose.buildx.yml
       - name: '[TEST] Quick fail'
         run: $(exit 1)
 
@@ -180,16 +187,11 @@ jobs:
       - name: Set up buildx
         uses: docker/setup-buildx-action@v3
 
+      # The actual build step is now very simple
       - name: Build the docker images
         env:
           NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-        run: |
-          cd docker
-          docker buildx bake \
-            -f docker-compose.yml \
-            -f ${{ runner.temp}}/docker-compose.cache.json \
-            --load
-
+        run: docker buildx bake -f ${{ runner.temp }}/docker-compose.buildx.yml --load
 
 
       - name: '[TEST] See what our POST-build cache folder looks like'
