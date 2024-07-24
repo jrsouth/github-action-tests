@@ -144,6 +144,14 @@ jobs:
           key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
 
+
+
+
+      - name: See what our PRE-build cache folder looks like
+        run: find docker
+
+
+
       # This giant `jq` filter creates a new file which injects *unique* `cache_from` and `cache_to`
       # values into each service definition that uses a `build` step, allowing the GitHub cache to
       # play nicely with multiple (simultaneous) builds.
@@ -154,18 +162,10 @@ jobs:
       # images' unique layers. (This is also why the docker `gha` backend fails to work correctly.)
       - name: Create local cache-config file
         run: |
-          mkdir -p docker/cache
-
+          find docker
           docker compose -f docker/docker-compose.yml config --format json \
             | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
             > docker/docker-compose.cache.json
-
-          cat docker/docker-compose.cache.json
-
-          docker compose \
-            -f docker/docker-compose.yml \
-            -f docker/docker-compose.cache.json \
-            config
 
       - name: Build the docker images
         env:
@@ -176,6 +176,13 @@ jobs:
             -f docker-compose.yml \
             -f docker-compose.cache.json \
             --load
+
+
+
+      - name: See what our POST-build cache folder looks like
+        run: find docker
+
+
 
       - name: Re-tag as `:latest` for the release branch
         if: github.ref_name == ${{ env.RELEASE_BRANCH }}
