@@ -147,7 +147,7 @@ jobs:
 
 
       - name: '[TEST] See what our PRE-build cache folder looks like'
-        run: find ${{ runner.temp }}/cache
+        run: find ${{ runner.temp }}/docker-cache
 
 
 
@@ -191,7 +191,7 @@ jobs:
 
 
       - name: '[TEST] See what our POST-build cache folder looks like'
-        run: find ${{ runner.temp }}/cache
+        run: find ${{ runner.temp }}/docker-cache
 
 
       - name: '[TEST] See what our docker image list contains'
