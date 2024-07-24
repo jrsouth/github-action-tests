@@ -126,9 +126,6 @@ jobs:
       #
       # And we push them to the defined Google Artifact Repository
 
-      - name: Set up buildx
-        uses: docker/setup-buildx-action@v3
-
       # We're using GitHub caches directly ― using the `gha` cache backend did not work for building
       # multiple images from a compose file, due to clobbering of the index.json file.
       #
@@ -147,25 +144,39 @@ jobs:
 
 
 
-      - name: See what our PRE-build cache folder looks like
-        run: find docker
+      - name: '[TEST] See what our PRE-build cache folder looks like'
+        run: find docker/cache
 
 
 
       # This giant `jq` filter creates a new file which injects *unique* `cache_from` and `cache_to`
       # values into each service definition that uses a `build` step, allowing the GitHub cache to
-      # play nicely with multiple (simultaneous) builds.
+      # play nicely with parallel builds.
       #
       # This does lead to redundancy if a base image is reused, since it's stored separately in each
-      # service's cache, but using a single shared cache location results in cache misses, as only
+      # service's cache, but using a single/shared cache location results in cache misses, as only
       # the chronologically-final index.json is stored ― which excludes any references to the other
       # images' unique layers. (This is also why the docker `gha` backend fails to work correctly.)
+
       - name: Create local cache-config file
         run: |
-          find docker
           docker compose -f docker/docker-compose.yml config --format json \
             | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
-            > docker/docker-compose.cache.json
+            > ${{ runner.temp}}/docker-compose.cache.json
+
+
+
+
+      - name: '[TEST] check our combined compose files merge as expected'
+        run: docker compose -f $COMPOSE_FILE -f ${{ runner.temp}}/docker-compose.cache.json config
+      - name: '[TEST] Quick fail'
+        run: $(exit 1)
+
+
+
+
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build the docker images
         env:
@@ -174,13 +185,13 @@ jobs:
           cd docker
           docker buildx bake \
             -f docker-compose.yml \
-            -f docker-compose.cache.json \
+            -f ${{ runner.temp}}/docker-compose.cache.json \
             --load
 
 
 
-      - name: See what our POST-build cache folder looks like
-        run: find docker
+      - name: '[TEST] See what our POST-build cache folder looks like'
+        run: find docker/cache
 
 
 
