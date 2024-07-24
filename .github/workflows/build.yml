@@ -134,12 +134,14 @@ jobs:
       # with deletion of the previous cache (AFTER saving the current one).
       #
       # @see "force-deletion" in https://github.com/actions/cache/blob/main/tips-and-workarounds.md
-      - name: Connect a docker layer cache
+      - name: Create cache location
+        run: mkdir -p docker/cache
+      - name: Restore docker layer cache
         uses: actions/cache@v4
         with:
           path: docker/cache
-          key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
-          restore-keys: ${{ github.repository }}
+          key: docker-cache/${{ github.run_id }}/${{ github.run_attempt }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+          restore-keys: docker-cache/
 
 
 
