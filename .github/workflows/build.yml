@@ -165,16 +165,15 @@ jobs:
             | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}' \
             > ${{ runner.temp }}/docker-compose.cache.json
 
-          docker compose -f
-
-
-
       # `docker buildx bake` has issues with relative working directory contexts, so we pass the
       # combined files through `docker compose config` to generate a version with absolute paths.
       - name: 'Create a compose file for use by buildx'
         run: |
           docker compose -f $COMPOSE_FILE -f ${{ runner.temp }}/docker-compose.cache.json config \
             > ${{ runner.temp }}/docker-compose.buildx.yml
+
+
+
 
       - name: '[TEST] check our combined compose files merged as expected'
         run: cat ${{ runner.temp }}/docker-compose.buildx.yml
