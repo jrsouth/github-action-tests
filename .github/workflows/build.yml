@@ -144,21 +144,28 @@ jobs:
           key: ${{ github.repository }}/${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
           restore-keys: ${{ github.repository }}
 
-      # This giant `jq` filter creates a YML file which injects *unique* `cache_from` and `cache_to`
-      # values into each service definition which uses a `build` step, allowing the GitHub cache
-      # to play nicely with multiple (simultaneous) builds.
+      # This giant `jq` filter creates a new file which injects *unique* `cache_from` and `cache_to`
+      # values into each service definition that uses a `build` step, allowing the GitHub cache to
+      # play nicely with multiple (simultaneous) builds.
       #
-      # This causes redundancy if a base image is reused, since it's stored separately in each
+      # This does lead to redundancy if a base image is reused, since it's stored separately in each
       # service's cache, but using a single shared cache location results in cache misses, as only
-      # the chronologically-final index.json is stored ― which misses any references to the other
-      # images' layers. (This is also why the docker `gha` backend fails to work correctly.)
+      # the chronologically-final index.json is stored ― which excludes any references to the other
+      # images' unique layers. (This is also why the docker `gha` backend fails to work correctly.)
       - name: Create local cache-config file
         run: |
           mkdir -p docker/cache
+
           docker compose -f docker/docker-compose.yml config --format json \
             | jq '{"services":.services|map_values(select(.build!=null))|with_entries({key:(.key),value:{"build":{"cache_from":[("type=local,src=./cache/"+.key)],"cache_to":[("type=local,dest=./cache/"+.key+",mode=max")]}}})}'
-            > docker/docker-compose.cache.yml
-          cat docker/docker-compose.cache.yml
+            > docker/docker-compose.cache.json
+
+          cat docker/docker-compose.cache.json
+
+          docker compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.cache.json \
+            config
 
       - name: Build the docker images
         env:
@@ -167,7 +174,7 @@ jobs:
           cd docker
           docker buildx bake \
             -f docker-compose.yml \
-            -f docker-compose.cache.yml \
+            -f docker-compose.cache.json \
             --load
 
       - name: Re-tag as `:latest` for the release branch
