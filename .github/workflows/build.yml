@@ -168,6 +168,8 @@ jobs:
       # `docker buildx bake` has issues with relative working directory contexts, so we pass the
       # combined files through `docker compose config` to generate a version with absolute paths.
       - name: 'Create a compose file for use by buildx'
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
         run: |
           docker compose -f $COMPOSE_FILE -f ${{ runner.temp }}/docker-compose.cache.json config \
             > ${{ runner.temp }}/docker-compose.buildx.yml
@@ -192,6 +194,18 @@ jobs:
 
       - name: '[TEST] See what our POST-build cache folder looks like'
         run: find docker/cache
+
+
+      - name: '[TEST] See what our docker image list contains'
+        run: |
+          docker image list
+
+
+      - name: '[TEST] See what our docker image list (filtered) contains'
+        env:
+          NEW_RELEASE_VERSION: ${{ steps.create-release-tag.outputs.NEW_RELEASE_VERSION }}
+        run: |
+          docker image list --filter=reference=${GOOGLE_DOCKER_REPOSITORY}/*:${NEW_RELEASE_VERSION} --format='{{.Repository}}'
 
 
 
