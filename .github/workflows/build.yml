@@ -87,7 +87,9 @@ jobs:
           version: '>= 363.0.0'
 
       - name: Test gcloud auth connection
-        run: gcloud info
+        run: |
+          gcloud info
+          gcloud container images list --repository=$GOOGLE_DOCKER_REPOSITORY
 
       - name: Configure Docker authentication for the Google Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
