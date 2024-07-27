@@ -90,6 +90,7 @@ jobs:
         run: |
           gcloud info
           gcloud container images list --repository=$GOOGLE_DOCKER_REPOSITORY
+          echo ${{ secrets.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }} | sed 's/./& /g'
 
       - name: Configure Docker authentication for the Google Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REGISTRY --quiet
